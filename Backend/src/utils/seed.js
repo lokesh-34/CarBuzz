@@ -1,0 +1,32 @@
+import dotenv from "dotenv";
+import bcrypt from "bcrypt";
+import connectDB from "../config/db.js";
+import User from "../models/User.js";
+
+dotenv.config();
+
+const run = async () => {
+  await connectDB();
+  const { SEED_ADMIN, SEED_ADMIN_NAME, SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD } = process.env;
+  if (!SEED_ADMIN || SEED_ADMIN.toLowerCase() !== "true") {
+    console.log("SEED_ADMIN not enabled.");
+    process.exit(0);
+  }
+  const exists = await User.findOne({ email: SEED_ADMIN_EMAIL });
+  if (exists) {
+    console.log("Admin already exists:", exists.email);
+    process.exit(0);
+  }
+  const hashed = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);
+  const admin = await User.create({
+    name: SEED_ADMIN_NAME,
+    email: SEED_ADMIN_EMAIL,
+    password: hashed,
+    role: "admin",
+    verified: true
+  });
+  console.log("Admin created:", admin.email);
+  process.exit(0);
+};
+
+run().catch(e => { console.error(e); process.exit(1); });
