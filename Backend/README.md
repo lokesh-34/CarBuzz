@@ -36,3 +36,20 @@ npm run seed
 - Payments are stubbed (amount is computed; integrate Razorpay/Stripe later).
 - Unlock flow generates OTP + QR (PNG data URL) valid around start time.
 - File uploads are stored under `src/uploads` (served via `/uploads`).
+
+### Email Notifications
+Configure SMTP credentials in `.env` to enable emails:
+
+```
+SMTP_HOST=smtp.yourhost.com
+SMTP_PORT=587
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_pass
+SMTP_SECURE=false
+MAIL_FROM="CarBuzz <no-reply@yourdomain.com>"
+```
+
+When configured:
+- On booking creation (user): provider receives an email with booking request details.
+- On booking status update (provider): user receives an email with the new status and summary.
+

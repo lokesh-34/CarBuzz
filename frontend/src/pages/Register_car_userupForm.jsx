@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import api from "../api";
+import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const tamilNaduDistricts = [
@@ -13,6 +14,7 @@ const tamilNaduDistricts = [
 ];
 
 export default function Register_car_userupForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
@@ -60,8 +62,19 @@ export default function Register_car_userupForm() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      console.log("User registered:", data?.user);
-      alert("Signup successful. You can now log in.");
+      // Auto-login right after successful signup
+      const loginRes = await api.post("/api/users/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      const token = loginRes.data?.token;
+      if (token) {
+        localStorage.setItem("token", token);
+        // Route user to their dashboard
+        navigate("/cars");
+        return;
+      }
+      alert("Signed up, but auto-login failed. Please log in manually.");
     } catch (err) {
       console.error("Signup failed:", err?.response?.data || err.message);
       alert("Signup failed. Please try again.");

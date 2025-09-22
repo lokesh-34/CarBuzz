@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import log from "../logger";
 import api from "../api";
+import { ToastContainer, toast } from "react-toastify"; // ✅ import toast + container
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -10,6 +12,7 @@ export default function Login() {
   const [showPwd, setShowPwd] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
   const redirect = useMemo(() => {
     const params = new URLSearchParams(location.search);
     const r = params.get("redirect");
@@ -21,7 +24,8 @@ export default function Login() {
     try {
       log("Login attempt", { email, role });
 
-      const url = role === "provider" ? "/api/providers/login" : "/api/users/login";
+      const url =
+        role === "provider" ? "/api/providers/login" : "/api/users/login";
       const { data } = await api.post(url, { email, password });
 
       const token = data?.token;
@@ -34,12 +38,14 @@ export default function Login() {
       localStorage.setItem("user", JSON.stringify(user));
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+      toast.success("Login successful 🎉"); // ✅ success toast
+
       if (redirect) navigate(redirect);
       else if (role === "provider") navigate("/provider");
       else navigate("/cars");
     } catch (err) {
       log("Login failed", err?.response?.data || err.message);
-      alert("Login failed. Please check your credentials.");
+      toast.error("Login failed. Please check your credentials ❌"); // ✅ fixed
     }
   };
 
@@ -102,7 +108,7 @@ export default function Login() {
               onClick={() => setShowPwd((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 text-sm text-gray-600 hover:bg-gray-100"
             >
-              {showPwd ? 'Hide' : 'Show'}
+              {showPwd ? "Hide" : "Show"}
             </button>
           </div>
         </div>
@@ -113,9 +119,15 @@ export default function Login() {
           Login
         </button>
         {redirect ? (
-          <p className="mt-2 text-center text-xs text-gray-500">You'll be redirected to <span className="font-medium">{redirect}</span> after login.</p>
+          <p className="mt-2 text-center text-xs text-gray-500">
+            You'll be redirected to{" "}
+            <span className="font-medium">{redirect}</span> after login.
+          </p>
         ) : null}
       </form>
+
+      {/* ✅ Toast container */}
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }

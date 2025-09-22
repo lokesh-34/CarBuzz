@@ -1,11 +1,14 @@
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app.js";
+import { verifyMailTransport } from "./utils/mail.js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const server = http.createServer(app);
+// Verify SMTP on startup
+verifyMailTransport();
 const io = new Server(server, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {

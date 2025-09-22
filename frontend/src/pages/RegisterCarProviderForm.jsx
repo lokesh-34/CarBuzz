@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
@@ -13,6 +14,7 @@ const tamilNaduDistricts = [
 ];
 
 function RegisterCarProviderForm() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     name: "",
     dob: "",
@@ -71,8 +73,18 @@ function RegisterCarProviderForm() {
         profileImage: ""
       });
 
-      alert(`Provider registered. Your Provider ID: ${data.provider._id}`);
-      localStorage.setItem("providerId", data.provider._id);
+      // Auto-login provider
+      const loginRes = await api.post("/api/providers/login", {
+        email: formData.email,
+        password: formData.password,
+      });
+      const token = loginRes.data?.token;
+      if (token) {
+        localStorage.setItem("token", token);
+        navigate("/provider");
+        return;
+      }
+      alert("Provider signed up, but auto-login failed. Please log in manually.");
 
       setFormData({
         name: "",

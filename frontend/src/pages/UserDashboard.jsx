@@ -223,7 +223,7 @@ export default function UserDashboard() {
             </div>
           ) : (
             <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredCars.map((car) => (
+                  {filteredCars.map((car) => (
               <div key={car._id} className="flex flex-col overflow-hidden rounded-xl bg-white shadow">
                 <div className="h-40 w-full bg-gray-100">
                   <img
@@ -262,6 +262,24 @@ export default function UserDashboard() {
         </div>
 
         {/* Moved My Bookings and Stats to User Stats page */}
+        {/* Contact info for confirmed bookings (quick glance) */}
+        {upcoming.filter(b => b.status === "confirmed" && b.carProviderId).length > 0 && (
+          <div className="mt-10 rounded-xl bg-white p-4 shadow">
+            <h2 className="mb-3 text-xl font-semibold">Your Providers (Confirmed)</h2>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              {upcoming.filter(b => b.status === "confirmed" && b.carProviderId).map((b) => (
+                <div key={b._id} className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                  <p className="font-semibold">{b.carId?.manufacturer} {b.carId?.model}</p>
+                  <p className="text-sm text-gray-700">{b.carProviderId?.name}</p>
+                  <p className="text-sm text-gray-600">{b.carProviderId?.phone} • {b.carProviderId?.email}</p>
+                  {b.carProviderId?.address?.fullAddress && (
+                    <p className="text-xs text-gray-500 mt-1">{b.carProviderId.address.fullAddress}, {b.carProviderId.address.area}, {b.carProviderId.address.district} - {b.carProviderId.address.pincode}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
