@@ -8,6 +8,10 @@ export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("featured");
   const navigate = useNavigate();
 
   const join = (p) => `${baseURL.replace(/\/$/, "")}/${String(p || "").replace(/^[\\/]/, "")}`;
@@ -15,6 +19,7 @@ export default function UserDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) {
         navigate("/login");
@@ -37,6 +42,8 @@ export default function UserDashboard() {
       } catch (err) {
         console.error(err);
         alert("Failed to fetch data");
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -44,6 +51,42 @@ export default function UserDashboard() {
 
   const handleBook = (carId) => navigate(`/book/${carId}`);
   const handleDetails = (carId) => navigate(`/cars/${carId}`);
+
+  const filteredCars = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    let list = cars;
+    if (typeFilter !== "all") {
+      list = list.filter((c) => String(c.type || "").toLowerCase() === typeFilter);
+    }
+    if (term) {
+      list = list.filter((c) => {
+      const parts = [
+        c.manufacturer,
+        c.model,
+        c.type,
+        c.fuelType,
+        c.transmission,
+        String(c.price),
+        c.location,
+      ]
+        .filter(Boolean)
+        .map((x) => String(x).toLowerCase());
+        return parts.some((p) => p.includes(term));
+      });
+    }
+    const sorted = [...list];
+    if (sortBy === "price-asc") sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+    else if (sortBy === "price-desc") sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+    else if (sortBy === "name")
+      sorted.sort((a, b) => String(a.manufacturer + a.model).localeCompare(String(b.manufacturer + b.model)));
+    // featured: leave order as-is
+    return sorted;
+  }, [q, cars, typeFilter, sortBy]);
+
+  const uniqueTypes = useMemo(() => {
+    const set = new Set((cars || []).map((c) => String(c.type || "").toLowerCase()).filter(Boolean));
+    return ["all", ...Array.from(set)];
+  }, [cars]);
 
   // Split bookings into upcoming/active vs past
   const { upcoming, past } = useMemo(() => {
@@ -118,9 +161,69 @@ export default function UserDashboard() {
 
         {/* Available Cars */}
         <div className="mt-8">
-          <h2 className="text-xl font-semibold">Available Cars</h2>
-          <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {cars.map((car) => (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h2 className="text-xl font-semibold">Available Cars</h2>
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                type="text"
+                placeholder="Search by make, model, type..."
+                className="w-full max-w-sm rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                {uniqueTypes.map((t) => (
+                  <option key={t} value={t}>{t === "all" ? "All Types" : t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                ))}
+              </select>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="featured">Featured</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="name">Name (A-Z)</option>
+              </select>
+              {(q || typeFilter !== "all" || sortBy !== "featured") && (
+                <button
+                  onClick={() => { setQ(""); setTypeFilter("all"); setSortBy("featured"); }}
+                  className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="mt-2 text-sm text-gray-500">Showing {filteredCars.length} of {cars.length} cars</div>
+          {loading ? (
+            <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-xl bg-white shadow">
+                  <div className="h-40 w-full animate-pulse bg-gray-200" />
+                  <div className="p-4">
+                    <div className="h-5 w-2/3 animate-pulse rounded bg-gray-200" />
+                    <div className="mt-2 h-4 w-1/3 animate-pulse rounded bg-gray-200" />
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      <div className="h-9 animate-pulse rounded bg-gray-200" />
+                      <div className="h-9 animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredCars.length === 0 ? (
+            <div className="mt-6 rounded-xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">
+              No cars match your filters.
+            </div>
+          ) : (
+            <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredCars.map((car) => (
               <div key={car._id} className="flex flex-col overflow-hidden rounded-xl bg-white shadow">
                 <div className="h-40 w-full bg-gray-100">
                   <img
@@ -128,12 +231,15 @@ export default function UserDashboard() {
                     alt={car.model}
                     onError={(e) => (e.currentTarget.src = "/placeholder.png")}
                     className="h-full w-full object-cover"
+                    role="button"
+                    onClick={() => handleDetails(car._id)}
                   />
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-semibold">{car.manufacturer} {car.model}</h3>
-                  <p className="text-sm text-gray-600">Type: {car.type}</p>
+                  <p className="text-sm text-gray-600">{car.type}{car.fuelType ? ` • ${car.fuelType}` : ""}{car.transmission ? ` • ${car.transmission}` : ""}</p>
                   <p className="mt-1 font-semibold text-blue-700">₹{car.price}</p>
+                  {car.location && <p className="text-xs text-gray-500">{car.location}</p>}
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleBook(car._id)}
@@ -150,8 +256,9 @@ export default function UserDashboard() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Moved My Bookings and Stats to User Stats page */}
