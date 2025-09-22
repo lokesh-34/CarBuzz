@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { baseURL } from "../api";
 import dayjs from "dayjs";
+// charts moved to UserStats page
 
 export default function UserDashboard() {
   const [user, setUser] = useState(null);
   const [cars, setCars] = useState([]);
   const [bookings, setBookings] = useState([]);
   const navigate = useNavigate();
+
+  const join = (p) => `${baseURL.replace(/\/$/, "")}/${String(p || "").replace(/^[\\/]/, "")}`;
+  // charts moved to UserStats page
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,117 +62,99 @@ export default function UserDashboard() {
     return { upcoming, past };
   }, [bookings]);
 
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const pending = bookings.filter((b) => b.status === "pending").length;
+    const confirmed = bookings.filter((b) => b.status === "confirmed").length;
+    const rejected = bookings.filter((b) => b.status === "rejected").length;
+    return { total, pending, confirmed, rejected, upcoming: upcoming.length, past: past.length };
+  }, [bookings, upcoming.length, past.length]);
+
+  // monthlyData removed; handled in UserStats
+
   if (!user) return <div className="p-6">Loading...</div>;
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">Welcome, {user.name}</h1>
+    <div className="min-h-screen bg-gray-50 px-6 py-6">
+      <div className="mx-auto max-w-7xl">
+        <h1 className="text-2xl font-bold text-gray-900">Welcome, {user.name}</h1>
 
-      <div className="mb-8 p-4 bg-white rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-2">Your Profile</h2>
-        <p><strong>Email:</strong> {user.email}</p>
-        <p><strong>Phone:</strong> {user.phone}</p>
-        <p><strong>Address:</strong> {user.address}</p>
-      </div>
-
-      <h2 className="text-2xl font-bold mb-4">Available Cars</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {cars.map((car) => (
-          <div key={car._id} className="bg-white rounded-lg shadow p-4 flex flex-col">
-            <img
-              src={car.images?.[0] ? `${baseURL}/${car.images[0]}` : "/placeholder.png"}
-              alt={car.model}
-              className="w-full h-40 object-cover rounded-md mb-4"
-            />
-            <h3 className="text-xl font-semibold">{car.manufacturer} {car.model}</h3>
-            <p className="text-gray-600 mb-2">Type: {car.type}</p>
-            <p className="text-gray-600 mb-2">Price: ₹{car.price}</p>
-            <div className="mt-auto flex gap-2">
-              <button
-                onClick={() => handleBook(car._id)}
-                className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Book Now
-              </button>
-              <button
-                onClick={() => handleDetails(car._id)}
-                className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                See Details
-              </button>
+        {/* Profile + Stats */}
+        <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
+          <div className="rounded-xl bg-white p-4 shadow md:col-span-1">
+            <h2 className="text-lg font-semibold">Your Profile</h2>
+            <div className="mt-2 text-sm text-gray-700">
+              <p><span className="font-medium">Email:</span> {user.email}</p>
+              <p><span className="font-medium">Phone:</span> {user.phone || '-'}</p>
+              <p><span className="font-medium">Address:</span> {user.address || '-'}</p>
+            </div>
+            <button
+              onClick={() => navigate('/user/stats')}
+              className="mt-3 rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+            >
+              View Stats
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-4 md:col-span-2">
+            <div className="rounded-xl bg-white p-4 shadow">
+              <p className="text-sm text-gray-500">Upcoming Trips</p>
+              <p className="mt-1 text-2xl font-bold text-blue-700">{stats.upcoming}</p>
+            </div>
+            <div className="rounded-xl bg-white p-4 shadow">
+              <p className="text-sm text-gray-500">Past Trips</p>
+              <p className="mt-1 text-2xl font-bold">{stats.past}</p>
+            </div>
+            <div className="rounded-xl bg-white p-4 shadow">
+              <p className="text-sm text-gray-500">Confirmed</p>
+              <p className="mt-1 text-2xl font-bold text-green-600">{stats.confirmed}</p>
+            </div>
+            <div className="rounded-xl bg-white p-4 shadow">
+              <p className="text-sm text-gray-500">Pending</p>
+              <p className="mt-1 text-2xl font-bold text-yellow-600">{stats.pending}</p>
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+        
 
-      {/* My Bookings */}
-      <div className="mt-10">
-        <h2 className="text-2xl font-bold mb-4">My Bookings</h2>
-
-        {/* Upcoming / Active */}
-        <div className="mb-8 p-4 bg-white rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-3">Upcoming & Active</h3>
-          {upcoming.length === 0 ? (
-            <p className="text-gray-500">No upcoming bookings.</p>
-          ) : (
-            <div className="space-y-3">
-              {upcoming.map((b) => (
-                <div key={b._id} className="p-4 border rounded-lg flex flex-col md:flex-row md:items-center md:justify-between">
-                  <div>
-                    <p className="font-semibold">
-                      {b.carId?.manufacturer} {b.carId?.model}
-                      <span className={`ml-2 px-2 py-0.5 text-xs rounded-full align-middle ${
-                        b.status === "confirmed" ? "bg-green-100 text-green-700" :
-                        b.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-                        "bg-red-100 text-red-700"
-                      }`}>
-                        {b.status}
-                      </span>
-                    </p>
-                    <p className="text-gray-600 text-sm">{b.pickupDate} {b.pickupTime} → {b.dropDate} {b.dropTime}</p>
-                    {b.place && <p className="text-gray-600 text-sm">Place: {b.place}</p>}
-                    {b.purpose && <p className="text-gray-600 text-sm">Purpose: {b.purpose}</p>}
-                  </div>
-                  <div className="mt-3 md:mt-0 flex gap-2">
+        {/* Available Cars */}
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold">Available Cars</h2>
+          <div className="mt-3 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {cars.map((car) => (
+              <div key={car._id} className="flex flex-col overflow-hidden rounded-xl bg-white shadow">
+                <div className="h-40 w-full bg-gray-100">
+                  <img
+                    src={car.images?.[0] ? join(car.images[0]) : "/placeholder.png"}
+                    alt={car.model}
+                    onError={(e) => (e.currentTarget.src = "/placeholder.png")}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="p-4">
+                  <h3 className="text-lg font-semibold">{car.manufacturer} {car.model}</h3>
+                  <p className="text-sm text-gray-600">Type: {car.type}</p>
+                  <p className="mt-1 font-semibold text-blue-700">₹{car.price}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
                     <button
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      onClick={() => handleDetails(b.carId?._id)}
+                      onClick={() => handleBook(car._id)}
+                      className="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
                     >
-                      View Car
+                      Book Now
+                    </button>
+                    <button
+                      onClick={() => handleDetails(car._id)}
+                      className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-200"
+                    >
+                      See Details
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Past / History */}
-        <div className="p-4 bg-white rounded-lg shadow">
-          <h3 className="text-xl font-semibold mb-3">Past Bookings</h3>
-          {past.length === 0 ? (
-            <p className="text-gray-500">No past bookings yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {past.map((b) => (
-                <div key={b._id} className="p-4 border rounded-lg">
-                  <p className="font-semibold">
-                    {b.carId?.manufacturer} {b.carId?.model}
-                    <span className={`ml-2 px-2 py-0.5 text-xs rounded-full align-middle ${
-                      b.status === "confirmed" ? "bg-green-100 text-green-700" :
-                      b.status === "pending" ? "bg-yellow-100 text-yellow-700" :
-                      "bg-red-100 text-red-700"
-                    }`}>
-                      {b.status}
-                    </span>
-                  </p>
-                  <p className="text-gray-600 text-sm">{b.pickupDate} {b.pickupTime} → {b.dropDate} {b.dropTime}</p>
-                  {b.place && <p className="text-gray-600 text-sm">Place: {b.place}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Moved My Bookings and Stats to User Stats page */}
       </div>
     </div>
   );
