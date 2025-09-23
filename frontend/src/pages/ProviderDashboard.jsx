@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api, { baseURL } from "../api";
 import log from "../logger";
 import dayjs from "dayjs";
+import { toast } from "react-toastify";
 import {
   ResponsiveContainer,
   BarChart,
@@ -34,6 +35,7 @@ export default function ProviderDashboard() {
       });
       setProfile(data);
       setProviderId(data?._id || null);
+      toast.success("Profile loaded", { toastId: "prov-prof-load" });
     } catch (e) {
       log("Load profile failed", e?.response?.data || e.message);
     }
@@ -47,6 +49,13 @@ export default function ProviderDashboard() {
       headers: { Authorization: `Bearer ${token}` },
     });
     setCars(data || []);
+    const pending = (data || []).some((c) => !c.approved);
+    toast.success("Cars loaded", { toastId: "prov-cars-load" });
+    if (pending) {
+      toast.info("Some cars are pending admin approval", { toastId: "prov-cars-pending" });
+    } else if ((data || []).length > 0) {
+      toast.success("All cars approved ✔", { toastId: "prov-cars-allok" });
+    }
   } catch (e) {
     log("Load cars failed", e?.response?.data || e.message);
   }
@@ -60,6 +69,7 @@ export default function ProviderDashboard() {
       if (!id) return;
       const { data } = await api.get(`/api/bookings/provider/${id}`);
       setBookings(data || []);
+      toast.success("Bookings loaded", { toastId: "prov-bookings-load" });
     } catch (e) {
       log("Load bookings failed", e?.response?.data || e.message);
     }
@@ -72,9 +82,10 @@ export default function ProviderDashboard() {
       setBookings(bookings.map(b => 
         b._id === id ? { ...b, status } : b
       ));
+      toast.success(`Booking ${status}`, { toastId: `prov-book-${id}-${status}` });
     } catch (e) {
       log("Update booking failed", e?.response?.data || e.message);
-      alert("Failed to update booking");
+      toast.error("Failed to update booking", { toastId: "prov-upd" });
     }
   };
 
@@ -83,9 +94,10 @@ export default function ProviderDashboard() {
     try {
       await api.delete(`/api/cars/${id}`);
       setCars(cars.filter((c) => c._id !== id));
+      toast.success("Car deleted", { toastId: `car-del-${id}` });
     } catch (e) {
       log("Delete car failed", e?.response?.data || e.message);
-      alert("Failed to delete car");
+      toast.error("Failed to delete car", { toastId: "prov-del" });
     }
   };
 
@@ -298,7 +310,12 @@ export default function ProviderDashboard() {
                       <div className="p-4">
                         <div className="flex items-center justify-between">
                           <p className="font-semibold text-gray-900">{car.manufacturer} {car.model}</p>
-                          <p className="font-semibold text-blue-700">₹{car.price}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`rounded-full px-2 py-0.5 text-xs ${car.approved ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+                              {car.approved ? "Approved" : "Pending"}
+                            </span>
+                            <p className="font-semibold text-blue-700">₹{car.price}</p>
+                          </div>
                         </div>
                         {car.type ? <p className="text-xs text-gray-600">Type: {car.type}</p> : null}
                         <div className="mt-3 flex justify-end">

@@ -28,7 +28,14 @@ router.post("/add", authMiddleware(), upload.array("images", 10), async (req, re
 // ✅ All Available Cars (public)
 router.get("/", async (req, res) => {
   try {
-    const cars = await Car.find({ availability: true }).sort({ createdAt: -1 });
+    // Auto-clear expired holds
+    const now = new Date();
+    await Car.updateMany(
+      { unavailableUntil: { $ne: null, $lte: now } },
+      { $set: { availability: true, unavailableUntil: null } }
+    );
+
+  const cars = await Car.find({ availability: true, approved: true }).sort({ createdAt: -1 });
     const mapped = cars.map((c) => ({
       ...c.toObject(),
       images: (c.images || []).map((img) => (img?.includes("uploads/") ? img : path.posix.join("uploads", path.basename(img || ""))))

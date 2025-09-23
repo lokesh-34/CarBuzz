@@ -14,7 +14,16 @@ export const searchCars = async (req, res) => {
   try {
     const { manufacturer, model, type, minPrice, maxPrice } = req.query;
 
-    const query = {};
+    // Auto-clear expired holds
+    const now = new Date();
+    await Car.updateMany(
+      { unavailableUntil: { $ne: null, $lte: now } },
+      { $set: { availability: true, unavailableUntil: null } }
+    );
+
+  const query = {};
+  query.availability = true;
+  query.approved = true;
     if (manufacturer) query.manufacturer = manufacturer;
     if (model) query.model = model;
     if (type) query.type = type;

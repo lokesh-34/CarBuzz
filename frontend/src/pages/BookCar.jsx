@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api, { baseURL } from "../api";
 import dayjs from "dayjs";
+import { toast } from "react-toastify";
 
 export default function BookCar() {
   const { id } = useParams();
@@ -106,10 +107,13 @@ useEffect(() => {
 
       setError("");
       setSuccess("Booking request sent to provider!");
+      toast.success("Booking request sent to provider!", { toastId: "booking-created" });
       setTimeout(() => navigate("/cars"), 900);
     } catch (err) {
       console.error(err);
-      setError("Failed to submit booking. Please try again.");
+      const msg = err?.response?.data?.message || "Failed to submit booking. Please try again.";
+      setError(msg);
+      toast.error(msg, { toastId: "booking-failed" });
     } finally {
       setSubmitting(false);
     }

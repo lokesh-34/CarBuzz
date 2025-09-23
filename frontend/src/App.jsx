@@ -12,6 +12,7 @@ import CarDetails from "./pages/CarDetails"; // ✅ we need this page
 import BookCar from "./pages/BookCar"; // ✅ booking form page
 import About from "./pages/About";
 import UserStats from "./pages/UserStats";
+import AdminDashboard from "./pages/AdminDashboard";
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/cars/:id" element={<CarDetails />} />
           <Route path="/book/:id" element={<BookCar />} />
           <Route path="/user/stats" element={<UserStats />} />
+          <Route path="/admin" element={<AdminDashboard />} />
 
         </Routes>
       </div>

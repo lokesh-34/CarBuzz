@@ -18,10 +18,18 @@ const run = async () => {
     process.exit(0);
   }
   const hashed = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);
+  // Provide required fields for schema validation; allow env overrides
+  const phone = process.env.SEED_ADMIN_PHONE || "9999999999";
+  const dobStr = process.env.SEED_ADMIN_DOB || "1990-01-01";
+  const license = process.env.SEED_ADMIN_LICENSE || "ADMIN-SEED-0001";
+  const dob = new Date(dobStr);
   const admin = await User.create({
     name: SEED_ADMIN_NAME,
     email: SEED_ADMIN_EMAIL,
     password: hashed,
+    phone,
+    dob,
+    license,
     role: "admin",
     verified: true
   });

@@ -9,15 +9,19 @@ import { sendMail } from "../utils/mail.js";
 const router = express.Router();
 
 // ✅ User creates booking
-router.post("/", authMiddleware(), async (req, res) => {
+router.post("/", authMiddleware(["user"]), async (req, res) => {
   try {
     const { carId, pickupDate, pickupTime, dropDate, dropTime, place, purpose, noOfDays } = req.body;
 
     // Get car + provider info
   const car = await Car.findById(carId);
     if (!car) return res.status(404).json({ message: "Car not found" });
+  if (!car.approved) return res.status(400).json({ message: "Car is pending admin approval" });
   const provider = await Provider.findById(car.provider);
   const userDoc = await User.findById(req.user.id);
+  if (!userDoc?.verified) {
+    return res.status(403).json({ message: "User is not verified by admin" });
+  }
 
     const booking = await Booking.create({
       carId,
@@ -66,12 +70,49 @@ router.post("/", authMiddleware(), async (req, res) => {
 // ✅ Provider updates booking status
 router.patch("/:id", authMiddleware(), async (req, res) => {
   try {
+    const newStatus = req.body.status;
     const booking = await Booking.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      { status: newStatus },
       { new: true }
     );
     if (!booking) return res.status(404).json({ message: "Booking not found" });
+
+    // Car availability management
+    try {
+      const car = await Car.findById(booking.carId);
+      if (car) {
+        const dropDateStr = booking.dropDate || "";
+        const dropTimeStr = booking.dropTime || "00:00";
+        // parse as local time; avoid forcing UTC
+        const dropIso = `${dropDateStr}T${dropTimeStr}:00`;
+        const dropAt = new Date(dropIso);
+
+        if (newStatus === "confirmed") {
+          car.availability = false;
+          const fallback = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          const candidate = isNaN(dropAt.getTime()) ? fallback : dropAt;
+          // Do not shorten an existing hold if present
+          if (car.unavailableUntil && car.unavailableUntil > candidate) {
+            // keep existing longer hold
+          } else {
+            car.unavailableUntil = candidate;
+          }
+          await car.save();
+        }
+        if (newStatus === "cancelled" || newStatus === "rejected") {
+          // If this booking was holding the lock, clear it
+          const now = new Date();
+          if (!car.unavailableUntil || car.unavailableUntil <= now) {
+            car.availability = true;
+            car.unavailableUntil = null;
+            await car.save();
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Car availability update failed:", e.message);
+    }
 
     // Email user about status update
   const userDoc = await User.findById(booking.userId);

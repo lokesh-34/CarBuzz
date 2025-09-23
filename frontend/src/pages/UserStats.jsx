@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import {
   ResponsiveContainer,
@@ -34,7 +35,7 @@ export default function UserStats() {
         setBookings(bookingsRes.data || []);
       } catch (err) {
         console.error(err);
-        alert("Failed to load stats");
+        toast.error("Failed to load stats", { toastId: "stats-load" });
       }
     };
     fetchData();

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { baseURL } from "../api";
 import dayjs from "dayjs";
+import { toast } from "react-toastify";
 // charts moved to UserStats page
 
 export default function UserDashboard() {
@@ -37,11 +38,13 @@ export default function UserDashboard() {
           api.get("/api/cars"),
           api.get(`/api/bookings/user/${me._id}`),
         ]);
-        setCars(carsRes.data?.cars || []);
-        setBookings(bookingsRes.data || []);
+  setCars(carsRes.data?.cars || []);
+  setBookings(bookingsRes.data || []);
+  // Positive feedback on initial load only
+  toast.success("Welcome back! Data loaded.", { toastId: "ud-load" });
       } catch (err) {
         console.error(err);
-        alert("Failed to fetch data");
+        toast.error("Failed to fetch data", { toastId: "ud-fetch" });
       } finally {
         setLoading(false);
       }

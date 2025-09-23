@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const tamilNaduDistricts = [
   "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
@@ -48,7 +49,7 @@ function RegisterCarProviderForm() {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.warn("Passwords do not match!", { toastId: "prov-pwd" });
       return;
     }
 
@@ -73,6 +74,11 @@ function RegisterCarProviderForm() {
         profileImage: ""
       });
 
+      // Persist providerId from registration response
+      if (data?.provider?._id) {
+        localStorage.setItem("providerId", data.provider._id);
+      }
+
       // Auto-login provider
       const loginRes = await api.post("/api/providers/login", {
         email: formData.email,
@@ -81,10 +87,16 @@ function RegisterCarProviderForm() {
       const token = loginRes.data?.token;
       if (token) {
         localStorage.setItem("token", token);
+        // Ensure providerId is also stored from login response
+        const loginProviderId = loginRes.data?.provider?._id;
+        if (loginProviderId) {
+          localStorage.setItem("providerId", loginProviderId);
+        }
         navigate("/provider");
+        toast.success("Provider signup complete. Logged in!", { toastId: "prov-ok" });
         return;
       }
-      alert("Provider signed up, but auto-login failed. Please log in manually.");
+      toast.info("Provider signed up, but auto-login failed. Please log in.", { toastId: "prov-noauto" });
 
       setFormData({
         name: "",
@@ -104,7 +116,7 @@ function RegisterCarProviderForm() {
     } catch (err) {
       console.error("Registration error:", err);
       const msg = err.response?.data?.message || "Failed to register provider. Please try again.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

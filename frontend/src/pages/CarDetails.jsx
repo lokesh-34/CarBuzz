@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api, { baseURL } from "../api";
+import { toast } from "react-toastify";
 
 export default function CarDetails() {
   const { id } = useParams();
@@ -12,13 +13,13 @@ export default function CarDetails() {
   const res = await api.get("/api/cars");
   const selectedCar = (res.data?.cars || []).find(c => c._id === id);
         if (!selectedCar) {
-          alert("Car not found");
+          toast.info("Car not found", { toastId: "car-missing" });
           return;
         }
         setCar(selectedCar);
       } catch (err) {
-        console.error(err);
-        alert("Failed to fetch car details");
+  console.error(err);
+  toast.error("Failed to fetch car details", { toastId: "car-fail" });
       }
     };
     fetchCar();

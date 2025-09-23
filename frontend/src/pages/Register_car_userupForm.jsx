@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const tamilNaduDistricts = [
   "Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore","Dharmapuri",
@@ -46,7 +47,7 @@ export default function Register_car_userupForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.warn("Passwords do not match!", { toastId: "pwd-mismatch" });
       return;
     }
 
@@ -72,12 +73,13 @@ export default function Register_car_userupForm() {
         localStorage.setItem("token", token);
         // Route user to their dashboard
         navigate("/cars");
+        toast.success("Signup complete. Logged in!", { toastId: "signup-login" });
         return;
       }
-      alert("Signed up, but auto-login failed. Please log in manually.");
+      toast.info("Signed up, but auto-login failed. Please log in manually.", { toastId: "signup-no-autologin" });
     } catch (err) {
       console.error("Signup failed:", err?.response?.data || err.message);
-      alert("Signup failed. Please try again.");
+      toast.error("Signup failed. Please try again.");
     }
   };
 

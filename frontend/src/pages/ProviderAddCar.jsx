@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import log from "../logger";
+import { toast } from "react-toastify";
 
 export default function ProviderAddCar() {
   const manufacturers = [
@@ -18,9 +19,12 @@ export default function ProviderAddCar() {
 
   const [providerId, setProviderId] = useState("");
   const [form, setForm] = useState({
+    vehicleReg: "",
     manufacturer: "",
     model: "",
     type: "sedan",
+    transmission: "manual",
+    fuelType: "petrol",
     price: "",
     seatingCapacity: "",
     description: "",
@@ -38,7 +42,7 @@ export default function ProviderAddCar() {
   useEffect(() => {
     const id = localStorage.getItem("providerId");
     if (!id) {
-      alert("No providerId found. Please register as a provider first.");
+      toast.warn("No provider profile found. Register/login first.", { toastId: "no-prov" });
       navigate("/provider");
       return;
     }
@@ -73,6 +77,10 @@ export default function ProviderAddCar() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!form.vehicleReg?.trim()) {
+        toast.error("Please enter the vehicle registration number");
+        return;
+      }
       const fd = new FormData();
       const formToSend = {
         ...form,
@@ -101,7 +109,7 @@ export default function ProviderAddCar() {
       });
 
       log("Car created", data.car);
-      alert("Car added successfully!");
+  toast.success("Car submitted. Awaiting admin approval.", { toastId: "car-added" });
       navigate("/provider");
     } catch (e) {
       log("Add car failed", e?.response?.data || e.message);
@@ -110,7 +118,7 @@ export default function ProviderAddCar() {
         e?.response?.data?.error ||
         e.message ||
         "Failed to add car";
-      alert(msg);
+      toast.error(msg);
     }
   };
 
@@ -118,6 +126,18 @@ export default function ProviderAddCar() {
     <div className="max-w-3xl mx-auto p-6 bg-white rounded-xl shadow">
       <h2 className="text-2xl font-bold mb-4">Add Vehicle</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Vehicle Registration Number */}
+        <div>
+          <label className="block mb-1 font-semibold">Vehicle Registration Number</label>
+          <input
+            name="vehicleReg"
+            placeholder="e.g., KA01AB1234"
+            value={form.vehicleReg}
+            onChange={handleChange}
+            className="w-full p-2 border rounded"
+            required
+          />
+        </div>
         {/* Manufacturer & Model */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <select
@@ -161,6 +181,32 @@ export default function ProviderAddCar() {
             <option value="ev">EV</option>
             <option value="luxury">Luxury</option>
             <option value="other">Other</option>
+          </select>
+
+          <select
+            name="transmission"
+            value={form.transmission}
+            onChange={handleChange}
+            className="p-2 border rounded"
+          >
+            <option value="manual">Manual</option>
+            <option value="automatic">Automatic</option>
+            <option value="amt">AMT</option>
+            <option value="cvt">CVT</option>
+          </select>
+
+          <select
+            name="fuelType"
+            value={form.fuelType}
+            onChange={handleChange}
+            className="p-2 border rounded"
+          >
+            <option value="petrol">Petrol</option>
+            <option value="diesel">Diesel</option>
+            <option value="cng">CNG</option>
+            <option value="electric">Electric</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="lpg">LPG</option>
           </select>
 
           <input
