@@ -17,7 +17,7 @@ const run = async () => {
     console.log("Admin already exists:", exists.email);
     process.exit(0);
   }
-  const hashed = await bcrypt.hash(SEED_ADMIN_PASSWORD, 10);
+  const hashed = await bcryptjs.hash(SEED_ADMIN_PASSWORD, 10);
   // Provide required fields for schema validation; allow env overrides
   const phone = process.env.SEED_ADMIN_PHONE || "9999999999";
   const dobStr = process.env.SEED_ADMIN_DOB || "1990-01-01";

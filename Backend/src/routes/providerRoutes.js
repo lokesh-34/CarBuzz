@@ -20,7 +20,7 @@ router.post("/register", async (req, res) => {
     }
 
     // hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcryptjs.hash(password, 10);
 
     const provider = new Provider({
       name,
@@ -53,7 +53,7 @@ router.post("/login", async (req, res) => {
       return res.status(404).json({ message: "Provider not found" });
     }
 
-    const isMatch = await bcrypt.compare(password, provider.password);
+  const isMatch = await bcryptjs.compare(password, provider.password);
     if (!isMatch) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
@@ -98,7 +98,7 @@ router.put("/profile", authMiddleware(["provider"]), async (req, res) => {
     }
 
     if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
+  updates.password = await bcryptjs.hash(updates.password, 10);
     }
 
     // Merge nested address (partial updates)

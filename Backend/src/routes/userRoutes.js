@@ -28,7 +28,7 @@ router.post("/register", upload.single("photo"), async (req, res) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User already exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcryptjs.hash(password, 10);
 
     const user = new User({
       name,
@@ -64,7 +64,7 @@ router.post("/login", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcryptjs.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     const token = jwt.sign(
@@ -104,7 +104,7 @@ router.put("/profile", authMiddleware(["user"]), upload.single("photo"), async (
 
     // If updating password
     if (updates.password) {
-      updates.password = await bcrypt.hash(updates.password, 10);
+  updates.password = await bcryptjs.hash(updates.password, 10);
     }
 
     // If new photo uploaded
