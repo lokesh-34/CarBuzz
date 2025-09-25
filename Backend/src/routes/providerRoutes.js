@@ -1,5 +1,5 @@
 import express from "express";
-import bcrypt from "bcrypt";
+import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
 import Provider from "../models/Provider.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
