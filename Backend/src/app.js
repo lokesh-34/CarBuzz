@@ -16,12 +16,33 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
+
+// CORS: allow from env ORIGIN_LIST plus localhost defaults
+const normalize = (u) => (u || "").replace(/\/$/, "").toLowerCase();
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+const envOrigins = (process.env.ORIGIN_LIST || "")
+  .split(",")
+  .map((s) => normalize(s.trim()))
+  .filter(Boolean);
+const allowedOrigins = new Set([...defaultOrigins.map(normalize), ...envOrigins]);
+
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      // Allow non-browser requests or same-origin (no Origin header)
+      if (!origin) return cb(null, true);
+      const o = normalize(origin);
+      if (allowedOrigins.has(o)) return cb(null, true);
+      return cb(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 app.use(morgan("dev"));
 
