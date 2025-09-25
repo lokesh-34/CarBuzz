@@ -32,7 +32,6 @@ export default function About() {
                   <StatCard value="200+" label="Providers" />
                   <StatCard value="5k+" label="Trips Booked" />
                 </div>
-                <p className="mt-4 text-sm text-blue-100">Numbers for demo purposes</p>
               </div>
             </div>
           </div>

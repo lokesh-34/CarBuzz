@@ -90,18 +90,28 @@ router.get("/profile", authMiddleware(["provider"]), async (req, res) => {
 // ==========================
 router.put("/profile", authMiddleware(["provider"]), async (req, res) => {
   try {
-    const updates = { ...req.body };
+    const allowed = ["name", "phone", "upiId", "profileImage", "address", "password"]; // email immutable
+    const body = req.body || {};
+    const updates = {};
+    for (const key of allowed) {
+      if (body[key] !== undefined) updates[key] = body[key];
+    }
 
-    // hash new password if provided
     if (updates.password) {
       updates.password = await bcrypt.hash(updates.password, 10);
     }
 
-    const updatedProvider = await Provider.findByIdAndUpdate(
-      req.user.id,
-      updates,
-      { new: true, runValidators: true }
-    ).select("-password");
+    // Merge nested address (partial updates)
+    if (updates.address) {
+      const existing = await Provider.findById(req.user.id).select("address");
+      if (!existing) return res.status(404).json({ message: "Provider not found" });
+      updates.address = { ...existing.address?.toObject?.(), ...updates.address };
+    }
+
+    const updatedProvider = await Provider.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
     res.json({ message: "Profile updated", provider: updatedProvider });
   } catch (error) {

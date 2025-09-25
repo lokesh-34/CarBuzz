@@ -31,7 +31,7 @@ export const approveCar = async (req, res) => {
 export const dashboardStats = async (req, res) => {
   const [users, providers, cars, bookings] = await Promise.all([
     User.countDocuments({ role: "user" }),
-    User.countDocuments({ role: "provider" }),
+    Provider.countDocuments({}),
     Car.countDocuments({ approved: true }),
     Booking.countDocuments()
   ]);
@@ -47,4 +47,79 @@ export const pendingApprovals = async (req, res) => {
       select: "name email phone address upiId",
     });
   res.json({ users, cars });
+};
+
+// GET /api/admin/analytics
+export const adminAnalytics = async (req, res) => {
+  try {
+    const [userDocs, bookingDocs, totalCars, totalProviders, totalUsers, totalAdmins] = await Promise.all([
+      User.find({ role: "user" }).select("name email phone role verified createdAt"),
+      Booking.find()
+        .populate({ path: "carId", select: "manufacturer model" })
+        .select("status createdAt pickupDate dropDate userName carId"),
+      Car.countDocuments({}),
+      Provider.countDocuments({}),
+      User.countDocuments({ role: "user" }),
+      User.countDocuments({ role: "admin" })
+    ]);
+
+    const totalBookings = bookingDocs.length;
+
+    // Status distribution
+    const statusCounts = bookingDocs.reduce((acc, b) => {
+      acc[b.status] = (acc[b.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Role distribution based on counts across collections
+    const roleDistribution = [
+      { role: "user", value: totalUsers },
+      { role: "provider", value: totalProviders },
+      { role: "admin", value: totalAdmins }
+    ];
+
+    // Monthly bookings last 12 months
+    const now = new Date();
+    const monthKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const months = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push(monthKey(d));
+    }
+    const monthlyMap = Object.fromEntries(months.map(m => [m, 0]));
+    bookingDocs.forEach(b => {
+      const d = new Date(b.createdAt);
+      const key = monthKey(d);
+      if (key in monthlyMap) monthlyMap[key]++;
+    });
+    const monthlyBookings = Object.entries(monthlyMap).map(([month, bookings]) => ({ month, bookings }));
+
+    const latestUsers = [...userDocs]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20);
+    const latestBookings = [...bookingDocs]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 20);
+
+    res.json({
+      stats: {
+        totalUsers,
+        totalProviders,
+        totalCars,
+        totalBookings
+      },
+      charts: {
+        monthlyBookings,
+        statusDistribution: Object.entries(statusCounts).map(([status, value]) => ({ status, value })),
+        roleDistribution
+      },
+      tables: {
+        users: latestUsers,
+        bookings: latestBookings
+      }
+    });
+  } catch (e) {
+    console.error("adminAnalytics error", e);
+    res.status(500).json({ message: "Failed to load analytics" });
+  }
 };

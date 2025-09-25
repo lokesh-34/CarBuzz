@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api, { baseURL } from "../api";
 import { toast } from "react-toastify";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from "recharts";
 
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
@@ -9,6 +10,8 @@ export default function AdminDashboard() {
   const [cars, setCars] = useState([]);
   const [selectedCar, setSelectedCar] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(false);
   const navigate = useNavigate();
 
   const loadPending = async () => {
@@ -33,7 +36,20 @@ export default function AdminDashboard() {
       return;
     }
     loadPending();
+    loadAnalytics();
   }, []);
+
+  const loadAnalytics = async () => {
+    try {
+      setLoadingAnalytics(true);
+      const { data } = await api.get("/api/admin/analytics");
+      setAnalytics(data);
+    } catch (e) {
+      toast.error("Failed to load analytics", { toastId: "adm-analytics" });
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
 
   const approveCar = async (id) => {
     try {
@@ -115,6 +131,134 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {/* Analytics Section */}
+        <div className="mt-10">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xl font-bold text-gray-900">Platform Analytics</h2>
+            <button onClick={loadAnalytics} className="rounded bg-gray-200 px-3 py-2 text-sm font-semibold hover:bg-gray-300 disabled:opacity-50" disabled={loadingAnalytics}>{loadingAnalytics ? "Loading..." : "Refresh"}</button>
+          </div>
+          {!analytics ? (
+            <p className="text-sm text-gray-500">No analytics loaded yet.</p>
+          ) : (
+            <div className="space-y-8">
+              {/* Stat Cards */}
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                <StatCard label="Users" value={analytics.stats.totalUsers} />
+                <StatCard label="Providers" value={analytics.stats.totalProviders} />
+                <StatCard label="Cars" value={analytics.stats.totalCars} />
+                <StatCard label="Bookings" value={analytics.stats.totalBookings} />
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                {/* Monthly Bookings Line Chart */}
+                <div className="rounded-xl bg-white p-4 shadow">
+                  <h3 className="mb-3 font-semibold">Bookings (Last 12 Months)</h3>
+                  <div className="h-60">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={analytics.charts.monthlyBookings}>
+                        <XAxis dataKey="month" hide />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="bookings" stroke="#2563eb" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Status Distribution Bar */}
+                <div className="rounded-xl bg-white p-4 shadow">
+                  <h3 className="mb-3 font-semibold">Booking Status Distribution</h3>
+                  <div className="h-60">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analytics.charts.statusDistribution}>
+                        <XAxis dataKey="status" />
+                        <YAxis allowDecimals={false} />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#10b981" radius={[4,4,0,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Role Distribution Pie */}
+                <div className="rounded-xl bg-white p-4 shadow">
+                  <h3 className="mb-3 font-semibold">Role Distribution</h3>
+                  <div className="h-60">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={analytics.charts.roleDistribution} dataKey="value" nameKey="role" outerRadius={90} label>
+                          {analytics.charts.roleDistribution.map((entry, idx) => (
+                            <Cell key={idx} fill={["#6366f1", "#f59e0b", "#ef4444", "#10b981"][idx % 4]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Data Tables */}
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="rounded-xl bg-white p-4 shadow">
+                  <h3 className="mb-3 font-semibold">Recent Users</h3>
+                  <div className="max-h-80 overflow-auto text-sm">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100 text-left text-xs uppercase tracking-wide text-gray-600">
+                          <th className="p-2">Name</th>
+                          <th className="p-2">Email</th>
+                          <th className="p-2">Role</th>
+                          <th className="p-2">Verified</th>
+                          <th className="p-2">Joined</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.tables.users.map(u => (
+                          <tr key={u._id} className="border-b last:border-none">
+                            <td className="p-2">{u.name}</td>
+                            <td className="p-2 text-xs">{u.email}</td>
+                            <td className="p-2 capitalize">{u.role}</td>
+                            <td className="p-2">{u.verified ? <span className="text-green-600">Yes</span> : <span className="text-red-600">No</span>}</td>
+                            <td className="p-2 text-xs">{new Date(u.createdAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="rounded-xl bg-white p-4 shadow">
+                  <h3 className="mb-3 font-semibold">Recent Bookings</h3>
+                  <div className="max-h-80 overflow-auto text-sm">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100 text-left text-xs uppercase tracking-wide text-gray-600">
+                          <th className="p-2">Car</th>
+                          <th className="p-2">User</th>
+                          <th className="p-2">Status</th>
+                          <th className="p-2">Created</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {analytics.tables.bookings.map(b => (
+                          <tr key={b._id} className="border-b last:border-none">
+                            <td className="p-2">{b.carId ? `${b.carId.manufacturer} ${b.carId.model}` : "-"}</td>
+                            <td className="p-2">{b.userName || "-"}</td>
+                            <td className="p-2 capitalize">{b.status}</td>
+                            <td className="p-2 text-xs">{new Date(b.createdAt).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Details Modal */}
@@ -213,6 +357,15 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-gray-900">{value}</p>
     </div>
   );
 }

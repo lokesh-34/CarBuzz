@@ -6,15 +6,32 @@ import { toast } from "react-toastify";
 
 export default function ProviderAddCar() {
   const manufacturers = [
-    "Maruti Suzuki", "Hyundai", "Tata", "Mahindra",
-    "Kia", "Toyota", "Honda",
-    // ... add more brands
+    "Maruti Suzuki", "Hyundai", "Tata", "Mahindra", "Kia", "Toyota", "Honda",
+    "Ford", "Renault", "Nissan", "Volkswagen", "Skoda", "MG", "Jeep",
+    "Mercedes-Benz", "BMW", "Audi", "Jaguar", "Land Rover", "Volvo"
   ];
 
   const modelsByBrand = {
-    "Maruti Suzuki": ["Alto", "Wagon R", "Swift", "Baleno"],
-    "Hyundai": ["Santro", "i10", "i20"],
-    // ... add more models
+    "Maruti Suzuki": ["Alto", "Wagon R", "Swift", "Baleno", "Dzire", "Ertiga"],
+    "Hyundai": ["Santro", "i10", "i20", "Creta", "Venue"],
+    "Tata": ["Nano", "Tiago", "Altroz", "Nexon", "Harrier"],
+    "Mahindra": ["Scorpio", "XUV300", "XUV700", "Bolero", "Thar"],
+    "Kia": ["Seltos", "Sonet", "Carens"],
+    "Toyota": ["Innova", "Fortuner", "Glanza", "Urban Cruiser"],
+    "Honda": ["City", "Amaze", "Jazz", "WR-V"],
+    "Ford": ["EcoSport", "Figo", "Endeavour"],
+    "Renault": ["Kwid", "Triber", "Duster"],
+    "Nissan": ["Magnite", "Kicks"],
+    "Volkswagen": ["Polo", "Vento", "Taigun"],
+    "Skoda": ["Rapid", "Superb", "Kushaq"],
+    "MG": ["Hector", "Astor", "ZS EV"],
+    "Jeep": ["Compass", "Meridian"],
+    "Mercedes-Benz": ["C-Class", "E-Class", "GLA", "GLC"],
+    "BMW": ["3 Series", "5 Series", "X1", "X5"],
+    "Audi": ["A3", "A4", "Q3", "Q5"],
+    "Jaguar": ["XF", "F-Pace"],
+    "Land Rover": ["Range Rover Evoque", "Discovery Sport"],
+    "Volvo": ["XC40", "XC60", "XC90"],
   };
 
   const [providerId, setProviderId] = useState("");
@@ -109,7 +126,7 @@ export default function ProviderAddCar() {
       });
 
       log("Car created", data.car);
-  toast.success("Car submitted. Awaiting admin approval.", { toastId: "car-added" });
+      toast.success("Car submitted. Awaiting admin approval.", { toastId: "car-added" });
       navigate("/provider");
     } catch (e) {
       log("Add car failed", e?.response?.data || e.message);
@@ -138,37 +155,49 @@ export default function ProviderAddCar() {
             required
           />
         </div>
-        {/* Manufacturer & Model */}
+
+        {/* Manufacturer & Model with datalist */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <select
-            name="manufacturer"
-            value={form.manufacturer}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-          >
-            <option value="" disabled>Select Manufacturer</option>
-            {manufacturers.map((m) => (
-              <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
+          <div>
+            <label className="block mb-1 font-semibold">Manufacturer</label>
+            <input
+              list="manufacturer-list"
+              name="manufacturer"
+              value={form.manufacturer}
+              onChange={handleChange}
+              placeholder="Type or select manufacturer"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <datalist id="manufacturer-list">
+              {manufacturers.map((m) => (
+                <option key={m} value={m} />
+              ))}
+            </datalist>
+          </div>
 
-          <select
-            name="model"
-            value={form.model}
-            onChange={handleChange}
-            className="p-2 border rounded"
-            required
-            disabled={!form.manufacturer}
-          >
-            <option value="" disabled>
-              {form.manufacturer ? "Select Model" : "Select manufacturer first"}
-            </option>
-            {(modelsByBrand[form.manufacturer] || []).map((mdl) => (
-              <option key={mdl} value={mdl}>{mdl}</option>
-            ))}
-          </select>
+          <div>
+            <label className="block mb-1 font-semibold">Model</label>
+            <input
+              list="model-list"
+              name="model"
+              value={form.model}
+              onChange={handleChange}
+              placeholder={form.manufacturer ? "Type or select model" : "Select manufacturer first"}
+              className="w-full p-2 border rounded"
+              required
+              disabled={!form.manufacturer}
+            />
+            <datalist id="model-list">
+              {(modelsByBrand[form.manufacturer] || []).map((mdl) => (
+                <option key={mdl} value={mdl} />
+              ))}
+            </datalist>
+          </div>
+        </div>
 
+        {/* Car Type, Transmission, FuelType, Seating, Price */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <select
             name="type"
             value={form.type}

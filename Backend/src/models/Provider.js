@@ -31,6 +31,9 @@ const providerSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profileImage: {
+      type: String,
+    },
     role: {
       type: String,
       enum: ["provider"],
