@@ -47,6 +47,16 @@ app.get("/api/test/admin", authMiddleware(["admin"]), (req, res) => res.json({ m
 // Health check
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+// Root route
+app.get("/", (req, res) => {
+  res.json({
+    name: "CarBuzz API",
+    status: "running",
+    health: "/health",
+    time: new Date().toISOString()
+  });
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err);

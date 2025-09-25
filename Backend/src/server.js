@@ -7,8 +7,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const server = http.createServer(app);
-// Verify SMTP on startup
-verifyMailTransport();
 const io = new Server(server, { cors: { origin: "*" } });
 
 io.on("connection", (socket) => {
@@ -22,4 +20,10 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  // Defer SMTP verification to after server starts; skip in production
+  if (process.env.NODE_ENV !== "production") {
+    verifyMailTransport()
+      .then(() => console.log("Mail transport verified"))
+      .catch(err => console.error("Mail transport verify failed:", err.message));
+  }
 });
