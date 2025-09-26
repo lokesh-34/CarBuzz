@@ -112,8 +112,8 @@ export default function About() {
               <p className="text-indigo-100 mt-1">We’d love to hear from you.</p>
             </div>
             <div className="md:text-right">
-              <a href="mailto:support@carbuzz.local" className="inline-block px-5 py-2.5 bg-white text-indigo-700 font-semibold rounded-lg shadow hover:shadow-md">
-                Email support@carbuzz.local
+              <a href="mailto:carbuzzrental@gmail.com" className="inline-block px-5 py-2.5 bg-white text-indigo-700 font-semibold rounded-lg shadow hover:shadow-md">
+                Email CarbuzzRental@gmai.com
               </a>
             </div>
           </div>
