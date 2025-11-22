@@ -35,6 +35,10 @@ app.use(
       // Allow non-browser requests or same-origin (no Origin header)
       if (!origin) return cb(null, true);
       const o = normalize(origin);
+      
+      // Allow Netlify preview and production domains
+      if (o.includes('.netlify.app')) return cb(null, true);
+      
       if (allowedOrigins.has(o)) return cb(null, true);
       return cb(new Error(`CORS blocked for origin: ${origin}`));
     },
