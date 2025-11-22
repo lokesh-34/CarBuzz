@@ -77,18 +77,61 @@ export default function Dashboard() {
       <div className="relative h-[320px] w-full overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-indigo-700" />
         {images.length > 0 && (
-          <div className="absolute inset-0">
-            {images.map((src, idx) => (
-              <img
-                key={idx}
-                src={src}
-                alt="slide"
-                className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
-                  idx === currentIndex ? 'opacity-70' : 'opacity-0'
-                }`}
-              />)
+          <>
+            <div className="absolute inset-0">
+              {images.map((src, idx) => (
+                <img
+                  key={idx}
+                  src={src}
+                  alt={`Car slide ${idx + 1}`}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${
+                    idx === currentIndex ? 'opacity-70' : 'opacity-0'
+                  }`}
+                  onError={(e) => {
+                    e.currentTarget.src = PLACEHOLDER_IMAGE;
+                  }}
+                />
+              ))}
+            </div>
+            
+            {/* Navigation Arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={() => setCurrentIndex((p) => (p - 1 + images.length) % images.length)}
+                  className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/80 p-2 shadow-lg transition hover:bg-white"
+                  aria-label="Previous slide"
+                >
+                  <svg className="h-6 w-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setCurrentIndex((p) => (p + 1) % images.length)}
+                  className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-white/80 p-2 shadow-lg transition hover:bg-white"
+                  aria-label="Next slide"
+                >
+                  <svg className="h-6 w-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+                
+                {/* Indicators */}
+                <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+                  {images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentIndex(idx)}
+                      className={`h-2 rounded-full transition-all ${
+                        idx === currentIndex ? 'w-8 bg-white' : 'w-2 bg-white/50'
+                      }`}
+                      aria-label={`Go to slide ${idx + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
             )}
-          </div>
+          </>
         )}
         <div className="relative z-10 mx-auto flex h-full max-w-7xl items-center px-6">
           <div className="max-w-2xl text-white">

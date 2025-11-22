@@ -298,108 +298,186 @@ export default function LiveTracking() {
   const speedSeries = useMemo(() => positions.map(p => ({ time: new Date(p.ts).toLocaleTimeString(), speed: p.speed })), [positions]);
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-4">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-semibold text-gray-900">Live Tracking {tripId ? `— Trip ${tripId}` : ''}</h1>
-            <p className="text-xs text-gray-500">
-              {connected ? 'Connected' : 'Waiting for updates'}
-              {isDriver && ' • GPS Active'}
-              {error ? ` — ${error}` : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            {isDriver && (
-              <div className="flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1 text-sm font-medium text-white">
-                <span className="animate-pulse">📍</span>
-                <span>Sharing Location</span>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="border-b bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Live Tracking {tripId && `— Trip #${tripId.slice(-8)}`}
+              </h1>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+                <span className={`flex items-center gap-1 ${connected ? 'text-green-600' : 'text-gray-500'}`}>
+                  <span className={`h-2 w-2 rounded-full ${connected ? 'bg-green-600' : 'bg-gray-400'}`}></span>
+                  {connected ? 'Connected' : 'Disconnected'}
+                </span>
+                {isDriver && (
+                  <span className="flex items-center gap-1 text-green-600">
+                    <span className="animate-pulse">📍</span>
+                    Sharing Location
+                  </span>
+                )}
+                {error && <span className="text-red-600">• {error}</span>}
               </div>
-            )}
-            <button className="rounded-lg bg-gray-100 px-3 py-1 text-sm" onClick={() => navigate(-1)}>Back</button>
+            </div>
+            <button 
+              onClick={() => navigate(-1)}
+              className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            >
+              ← Back
+            </button>
           </div>
         </div>
+      </div>
 
-        {pickupAt && secondsToPickup > 0 && (
-          <div className="mb-3 rounded-lg border bg-yellow-50 px-3 py-2 text-sm text-yellow-800">
-            Tracking will start at pickup time. Starts in {pickupCountdown}.
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="col-span-2 h-[520px] overflow-hidden rounded-xl border bg-white">
-            <MapContainer center={latest ? [latest.lat, latest.lng] : [12.9716, 77.5946]} zoom={14} style={{ height: '100%', width: '100%' }}>
-              <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-              {latest && <FollowMapCenter lat={latest.lat} lng={latest.lng} />}
-              {positions.length > 0 && (
-                <>
-                  <Marker position={[latest.lat, latest.lng]}>
-                    <Popup>
-                      Speed: {latest.speed} km/h<br />
-                      Time: {new Date(latest.ts).toLocaleTimeString()}
-                    </Popup>
-                  </Marker>
-                  <Polyline positions={positions.map((p) => [p.lat, p.lng])} color="#2563eb" />
-                </>
-              )}
-            </MapContainer>
-          </div>
-          <div className="col-span-1 rounded-xl border bg-white p-4">
-            <div className="mb-4 rounded-lg border bg-gray-50 p-3">
-              <div className="text-sm text-gray-500">Current Speed</div>
-              <div className="mt-2 text-3xl font-bold text-blue-600">{latest ? `${latest.speed} km/h` : '--'}</div>
-              <div className="mt-1 text-xs text-gray-500">{latest ? new Date(latest.ts).toLocaleTimeString() : ''}</div>
+      {/* Countdown Banner */}
+      {pickupAt && secondsToPickup > 0 && (
+        <div className="border-b bg-yellow-50">
+          <div className="mx-auto max-w-7xl px-4 py-3">
+            <div className="flex items-center gap-2 text-yellow-800">
+              <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">Tracking starts in {pickupCountdown}</span>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="mb-4 rounded-lg border bg-white p-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Trip Stats</div>
-                <button 
-                  className="text-xs text-red-600 hover:text-red-800" 
-                  onClick={() => {
-                    if (socketRef.current?.connected && tripId) {
-                      socketRef.current.emit('endTrip', { tripId });
-                    }
-                    setTripEnded(true);
-                    stopGPSTracking();
-                  }}
+      {/* Main Content */}
+      <div className="mx-auto max-w-7xl px-4 py-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* Map Section */}
+          <div className="lg:col-span-2">
+            <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+              <div className="h-[500px] lg:h-[600px]">
+                <MapContainer 
+                  center={latest ? [latest.lat, latest.lng] : [12.9716, 77.5946]} 
+                  zoom={14} 
+                  style={{ height: '100%', width: '100%' }}
+                  className="z-0"
                 >
-                  End Trip
-                </button>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  {latest && <FollowMapCenter lat={latest.lat} lng={latest.lng} />}
+                  {positions.length > 0 && (
+                    <>
+                      <Marker position={[latest.lat, latest.lng]}>
+                        <Popup>
+                          <div className="text-sm">
+                            <div className="font-semibold">Current Location</div>
+                            <div>Speed: {latest.speed} km/h</div>
+                            <div className="text-gray-600">{new Date(latest.ts).toLocaleTimeString()}</div>
+                          </div>
+                        </Popup>
+                      </Marker>
+                      <Polyline positions={positions.map((p) => [p.lat, p.lng])} color="#2563eb" weight={4} />
+                    </>
+                  )}
+                </MapContainer>
               </div>
-              <div className="mt-3 text-sm text-gray-600">Points: {positions.length}</div>
+            </div>
+          </div>
+
+          {/* Stats & Chart Section */}
+          <div className="space-y-6 lg:col-span-1">
+            {/* Current Speed Card */}
+            <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 text-white">
+                <div className="text-sm font-medium opacity-90">Current Speed</div>
+                <div className="mt-2 text-5xl font-bold">
+                  {latest ? latest.speed : '--'}
+                </div>
+                <div className="mt-1 text-lg opacity-90">km/h</div>
+                <div className="mt-3 text-xs opacity-75">
+                  {latest ? new Date(latest.ts).toLocaleTimeString() : 'Waiting for data...'}
+                </div>
+              </div>
             </div>
 
-            <div className="h-64">
-              <div className="text-sm font-medium">Speed vs Time</div>
-              {positions.length === 0 ? (
-                <div className="mt-6 text-center text-sm text-gray-500">Waiting for data…</div>
-              ) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={speedSeries}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="time" />
-                    <YAxis unit="km/h" />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="speed" stroke="#8884d8" dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
+            {/* Trip Stats Card */}
+            <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-gray-900">Trip Statistics</h3>
+                  <button 
+                    onClick={() => {
+                      if (socketRef.current?.connected && tripId) {
+                        socketRef.current.emit('endTrip', { tripId });
+                      }
+                      setTripEnded(true);
+                      stopGPSTracking();
+                    }}
+                    className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                  >
+                    End Trip
+                  </button>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-xs text-gray-500">Data Points</div>
+                    <div className="mt-1 text-2xl font-bold text-gray-900">{positions.length}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-gray-500">Max Speed</div>
+                    <div className="mt-1 text-2xl font-bold text-gray-900">
+                      {positions.length > 0 ? Math.max(...positions.map(p => p.speed)) : 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Speed Chart Card */}
+            <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900">Speed Over Time</h3>
+                <div className="mt-4">
+                  {positions.length === 0 ? (
+                    <div className="flex h-48 items-center justify-center text-sm text-gray-500">
+                      <div className="text-center">
+                        <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        <div className="mt-2">Waiting for tracking data...</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <LineChart data={speedSeries}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis dataKey="time" tick={{ fontSize: 10 }} stroke="#9ca3af" />
+                        <YAxis unit="km/h" tick={{ fontSize: 10 }} stroke="#9ca3af" />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                        />
+                        <Line type="monotone" dataKey="speed" stroke="#2563eb" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {tripEnded && (
-          <div className="mt-4 rounded-xl border bg-white p-4">
-            <div className="text-sm font-medium">Trip finished — Speed vs Time summary</div>
-            <div className="mt-3 h-64">
-              <ResponsiveContainer width="100%" height={240}>
+        {/* Trip Summary */}
+        {tripEnded && positions.length > 0 && (
+          <div className="mt-6 overflow-hidden rounded-xl border bg-white shadow-sm">
+            <div className="border-b bg-gray-50 px-6 py-4">
+              <h2 className="text-lg font-semibold text-gray-900">Trip Summary</h2>
+              <p className="text-sm text-gray-600">Complete speed analysis for this journey</p>
+            </div>
+            <div className="p-6">
+              <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={speedSeries}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="time" />
-                  <YAxis unit="km/h" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="speed" stroke="#ff5722" dot />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="time" stroke="#9ca3af" />
+                  <YAxis unit="km/h" stroke="#9ca3af" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
+                  />
+                  <Line type="monotone" dataKey="speed" stroke="#ff5722" strokeWidth={2} dot={{ fill: '#ff5722', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
